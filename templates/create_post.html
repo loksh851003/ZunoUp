@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.create-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; }
+.create-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+.type-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.type-tab { padding: 8px 18px; border-radius: 24px; border: 2px solid var(--border); background: var(--bg); color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; min-height: 0; }
+.type-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+.poll-options-wrap { margin-top: 12px; }
+.poll-option-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.poll-option-row input { flex: 1; }
+.poll-option-row button { min-height: 0; padding: 0 14px; border-radius: 8px; background: #ffe9e9; color: var(--accent); font-size: 18px; border: none; cursor: pointer; height: 48px; transition: all 0.2s; }
+.poll-option-row button:hover { background: var(--accent); color: white; transform: none; box-shadow: none; }
+.img-preview-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.img-preview-grid img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border); }
+.error-msg { background: #ffe9e9; color: var(--accent); padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+</style>
+
+<div class="create-card">
+  <h2>✏️ Create Post</h2>
+  {% if error %}<div class="error-msg">{{ error }}</div>{% endif %}
+
+  <div class="type-tabs">
+    <button type="button" class="type-tab active" onclick="setType('post', this)">📝 Post</button>
+    <button type="button" class="type-tab" onclick="setType('poll', this)">📊 Poll</button>
+  </div>
+
+  <form method="POST" enctype="multipart/form-data" id="create-form">
+    <input type="hidden" name="post_type" id="post_type" value="post">
+
+    <div class="form-group">
+      <label>What's on your mind? <span style="color:var(--muted);font-weight:400">(use #hashtags and @mentions)</span></label>
+      <textarea name="content" id="content" placeholder="Share something..." required>{{ request.form.get('content', '') }}</textarea>
+    </div>
+
+    <div id="image-section" class="form-group">
+      <label>Images <span style="color:var(--muted);font-weight:400">(up to 10, hold Ctrl/Cmd to select multiple)</span></label>
+      <input type="file" name="images" accept="image/*" multiple id="image-input" onchange="previewImages(this)">
+      <div class="img-preview-grid" id="preview-grid"></div>
+    </div>
+
+    <div id="poll-section" class="form-group" style="display:none">
+      <label>Poll Options</label>
+      <div class="poll-options-wrap" id="poll-options">
+        <div class="poll-option-row"><input type="text" name="poll_option" placeholder="Option 1" required></div>
+        <div class="poll-option-row"><input type="text" name="poll_option" placeholder="Option 2" required></div>
+      </div>
+      <button type="button" onclick="addPollOption()" class="btn-outline btn-sm mt-1">+ Add Option</button>
+    </div>
+
+    <button type="submit" style="width:100%; margin-top:8px">Post</button>
+  </form>
+</div>
+
+<script>
+function setType(type, btn) {
+  document.getElementById('post_type').value = type;
+  document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('image-section').style.display = type === 'post' ? '' : 'none';
+  document.getElementById('poll-section').style.display = type === 'poll' ? '' : 'none';
+  const content = document.getElementById('content');
+  content.placeholder = type === 'poll' ? 'Ask your question...' : 'Share something...';
+}
+
+let pollCount = 2;
+function addPollOption() {
+  if (pollCount >= 6) return showToast('Maximum 6 poll options');
+  pollCount++;
+  const wrap = document.getElementById('poll-options');
+  const row = document.createElement('div');
+  row.className = 'poll-option-row';
+  row.innerHTML = `<input type="text" name="poll_option" placeholder="Option ${pollCount}">
+    <button type="button" onclick="this.parentElement.remove(); pollCount--">×</button>`;
+  wrap.appendChild(row);
+}
+
+function previewImages(input) {
+  const grid = document.getElementById('preview-grid');
+  grid.innerHTML = '';
+  Array.from(input.files).slice(0, 10).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      grid.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+</script>
+{% endblock %}

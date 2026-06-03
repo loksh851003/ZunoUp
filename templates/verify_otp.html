@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Verify Email – ZunoUp</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --primary: #6c47ff; --primary-light: #ede9ff; --bg: #f0f2f8; --card: #fff; --text: #1a1a2e; --muted: #8888a8; --border: #e8e8f0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  .wrap { width: 100%; max-width: 440px; }
+  .logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 32px; color: var(--primary); text-align: center; margin-bottom: 8px; letter-spacing: -1px; }
+  .tagline { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  .card { background: var(--card); border-radius: 24px; padding: 36px 32px; box-shadow: 0 8px 40px rgba(108,71,255,.10); }
+  h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; line-height: 1.5; }
+  .email-badge { display: inline-block; background: var(--primary-light); color: var(--primary); font-weight: 600; font-size: 13px; padding: 4px 12px; border-radius: 20px; margin-bottom: 24px; }
+
+  /* OTP input boxes */
+  .otp-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 24px; }
+  .otp-box {
+    width: 48px; height: 60px; font-size: 26px; font-weight: 700;
+    text-align: center; border: 2.5px solid var(--border); border-radius: 14px;
+    background: var(--bg); color: var(--text); outline: none;
+    font-family: 'Space Grotesk', monospace;
+    transition: border-color .2s, box-shadow .2s, transform .15s;
+    caret-color: var(--primary);
+  }
+  .otp-box:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(108,71,255,.12); background: #fff; transform: scale(1.06); }
+  .otp-box.filled { border-color: var(--primary); background: var(--primary-light); }
+
+  .timer { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+  .timer span { font-weight: 700; color: var(--primary); }
+
+  .error-msg { background: #ffe9e9; color: #c0392b; padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 500; margin-bottom: 20px; border-left: 4px solid #e74c3c; }
+  .success-msg { background: #e6fff0; color: #27ae60; padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 500; margin-bottom: 20px; border-left: 4px solid #2ecc71; }
+
+  .btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; min-height: 52px; }
+  .btn:hover { background: #5538e0; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(108,71,255,.3); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  .resend-row { text-align: center; margin-top: 20px; font-size: 14px; color: var(--muted); }
+  .resend-link { color: var(--primary); font-weight: 600; cursor: pointer; background: none; border: none; font-size: 14px; font-family: inherit; text-decoration: underline; }
+  .resend-link:disabled { opacity: .4; cursor: not-allowed; }
+
+  .back-link { display: block; text-align: center; margin-top: 16px; font-size: 14px; color: var(--muted); }
+  .back-link a { color: var(--primary); font-weight: 600; text-decoration: none; }
+
+  .success-check { display: none; text-align: center; margin-bottom: 20px; }
+  .checkmark { width: 64px; height: 64px; border-radius: 50%; background: #e6fff0; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; animation: pop .4s ease; }
+  @keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+  @media (max-width: 480px) {
+    .card { padding: 28px 20px; border-radius: 20px; }
+    .otp-box { width: 42px; height: 54px; font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">ZunoUp</div>
+  <p class="tagline">Check your inbox ✉️</p>
+  <div class="card">
+    <h2>Verify your email</h2>
+    <p class="sub">We've sent a 6-digit code to</p>
+    <div class="email-badge">{{ email }}</div>
+
+    {% if error %}
+    <div class="error-msg">{{ error }}</div>
+    {% endif %}
+
+    {% if expired %}
+    <p class="back-link"><a href="{{ url_for('register') }}">← Back to registration</a></p>
+    {% else %}
+    <div id="successCheck" class="success-check">
+      <div class="checkmark">✓</div>
+    </div>
+
+    <form method="POST" id="otpForm">
+      <div class="otp-row">
+        {% for i in range(1, 7) %}
+        <input class="otp-box" type="text" id="otp{{ i }}" name="otp{{ i }}"
+               maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code"
+               {% if i == 1 %}autofocus{% endif %} required>
+        {% endfor %}
+      </div>
+
+      <div class="timer">Code expires in <span id="timerDisplay">10:00</span></div>
+
+      <button type="submit" class="btn" id="verifyBtn">Verify &amp; Continue</button>
+    </form>
+
+    <div class="resend-row">
+      Didn't receive it?
+      <a href="{{ url_for('resend_otp') }}" id="resendLink" class="resend-link">Resend code</a>
+    </div>
+    <p class="back-link"><a href="{{ url_for('register') }}">← Back to registration</a></p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+
+const boxes = document.querySelectorAll('.otp-box');
+boxes.forEach((box, idx) => {
+  box.addEventListener('input', e => {
+
+    const val = e.target.value;
+    if (val.length > 1) {
+      const digits = val.replace(/\D/g, '').slice(0, 6);
+      digits.split('').forEach((d, i) => {
+        if (boxes[idx + i]) boxes[idx + i].value = d;
+      });
+      const next = boxes[Math.min(idx + digits.length, 5)];
+      if (next) next.focus();
+      updateFilled();
+      return;
+    }
+    if (val && idx < 5) boxes[idx + 1].focus();
+    updateFilled();
+  });
+
+  box.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !box.value && idx > 0) {
+      boxes[idx - 1].focus();
+      boxes[idx - 1].value = '';
+      updateFilled();
+    }
+  });
+
+  box.addEventListener('paste', e => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text');
+    const digits = text.replace(/\D/g, '').slice(0, 6);
+    digits.split('').forEach((d, i) => { if (boxes[i]) boxes[i].value = d; });
+    updateFilled();
+    const focusIdx = Math.min(digits.length, 5);
+    boxes[focusIdx].focus();
+  });
+});
+
+function updateFilled() {
+  boxes.forEach(b => b.classList.toggle('filled', b.value !== ''));
+}
+
+let seconds = 600;
+const timerEl = document.getElementById('timerDisplay');
+function tick() {
+  if (!timerEl) return;
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  timerEl.textContent = `${m}:${s}`;
+  if (seconds === 0) {
+    timerEl.textContent = 'Expired';
+    timerEl.style.color = '#e74c3c';
+    document.getElementById('verifyBtn').disabled = true;
+    return;
+  }
+  seconds--;
+  setTimeout(tick, 1000);
+}
+tick();
+
+const form = document.getElementById('otpForm');
+if (form) {
+  form.addEventListener('submit', () => {
+    document.getElementById('verifyBtn').textContent = 'Verifying…';
+    document.getElementById('verifyBtn').disabled = true;
+  });
+}
+</script>
+</body>
+</html>

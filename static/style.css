@@ -1,0 +1,9 @@
+html { scroll-behavior: smooth; }
+
+img { max-width: 100%; display: block; }
+
+.post-img {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+}

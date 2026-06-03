@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.container { padding: 0; width: 100%; max-width: 680px; }
+.chat-wrap {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--nav-h) - 48px);
+  overflow: hidden;
+}
+@media (max-width: 768px) {
+  .chat-wrap { height: calc(100dvh - var(--nav-h) - var(--bottom-nav-h) - 16px); border-radius: 14px; }
+}
+.chat-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+.back-btn { font-size: 20px; padding: 4px 8px; border-radius: 8px; cursor: pointer; color: var(--primary); display: none; text-decoration: none; }
+@media (max-width: 768px) { .back-btn { display: block; } }
+.chat-user-info { flex: 1; min-width: 0; }
+.chat-username { font-weight: 700; font-size: 16px; }
+.chat-status { font-size: 12px; color: var(--muted); }
+.chat-status.online { color: #22c55e; }
+.chat-avatar-sm {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--primary-light); color: var(--primary);
+  font-weight: 700; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; flex-shrink: 0;
+}
+.chat-avatar-sm img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.chat-body {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--bg); -webkit-overflow-scrolling: touch;
+}
+.msg {
+  max-width: 75%; padding: 10px 14px; border-radius: 18px;
+  font-size: 14.5px; line-height: 1.5; word-break: break-word; position: relative;
+  animation: msgIn .2s ease;
+}
+@keyframes msgIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: none; } }
+.msg.sent { background: var(--primary); color: white; margin-left: auto; border-bottom-right-radius: 4px; }
+.msg.received { background: var(--card); border: 1px solid var(--border); margin-right: auto; border-bottom-left-radius: 4px; }
+.msg-meta { font-size: 10px; opacity: 0.65; margin-top: 3px; display: flex; align-items: center; gap: 3px; justify-content: flex-end; }
+.tick { font-size: 11px; }
+.tick.seen { color: #93c5fd; }
+.date-divider { text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); padding: 4px 12px; background: var(--border); border-radius: 20px; align-self: center; margin: 4px 0; }
+.typing-indicator { display: none; align-items: center; gap: 6px; padding: 6px 12px; }
+.typing-indicator.show { display: flex; }
+.typing-dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: bounce .9s infinite; }
+.typing-dots span:nth-child(2) { animation-delay: .15s; }
+.typing-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+.chat-footer {
+  padding: 12px 14px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px; align-items: center;
+  flex-shrink: 0; background: var(--card);
+}
+.chat-footer input {
+  flex: 1; padding: 12px 16px; border-radius: 24px;
+  border: 1.5px solid var(--border); font-size: 16px;
+  background: var(--bg); outline: none; font-family: 'DM Sans', sans-serif;
+}
+.chat-footer input:focus { border-color: var(--primary); background: white; }
+.send-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--primary); color: white; border: none;
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.2s; padding: 0; min-height: 0;
+}
+.send-btn:hover { background: #5538e0; transform: scale(1.05); }
+.send-btn:disabled { opacity: .5; transform: none; }
+</style>
+
+<div class="chat-wrap">
+
+  <div class="chat-header">
+    <a href="{{ url_for('chat_list') }}" class="back-btn">←</a>
+    <div class="chat-avatar-sm">
+      {% if user.image_file %}
+      <img src="{{ url_for('static', filename='uploads/' + user.image_file) }}" alt="">
+      {% else %}{{ user.username[0].upper() }}{% endif %}
+    </div>
+    <div class="chat-user-info">
+      <div class="chat-username">{{ user.nickname or user.username }}</div>
+      <div class="chat-status {% if user.id in online_users %}online{% endif %}" id="statusText">
+        {% if user.id in online_users %}● Online{% else %}● Offline{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-body" id="chatBody">
+    {% for msg in messages %}
+    <div class="msg {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}" data-id="{{ msg.id }}">
+      {{ msg.content }}
+      {% if msg.sender_id == current_user.id %}
+      <div class="msg-meta">
+        {{ msg.timestamp.strftime('%H:%M') }}
+        <span class="tick {% if msg.is_seen %}seen{% endif %}">{% if msg.is_seen %}✓✓{% else %}✓{% endif %}</span>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="typing-indicator" id="typingIndicator">
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+      <span style="font-size:12px;color:var(--muted)" id="typingText"></span>
+    </div>
+  </div>
+
+  <div class="chat-footer" id="chatForm">
+    <input type="text" id="msgInput" placeholder="Type a message…" autocomplete="off">
+    <button class="send-btn" id="sendBtn">➤</button>
+  </div>
+</div>
+
+<script>
+const CURRENT_USER_ID = {{ current_user.id }};
+const OTHER_USER_ID   = {{ user.id }};
+const chatBody  = document.getElementById('chatBody');
+const msgInput  = document.getElementById('msgInput');
+const sendBtn   = document.getElementById('sendBtn');
+const typingInd = document.getElementById('typingIndicator');
+const typingTxt = document.getElementById('typingText');
+
+function scrollBottom() {
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+scrollBottom();
+
+const socket = io();
+
+socket.on('connect', () => {
+  socket.emit('join_chat', { with_user_id: OTHER_USER_ID });
+
+  socket.emit('mark_seen', { sender_id: OTHER_USER_ID });
+});
+
+socket.on('user_online', data => {
+  if (data.user_id == OTHER_USER_ID) setStatus(true);
+});
+socket.on('user_offline', data => {
+  if (data.user_id == OTHER_USER_ID) setStatus(false);
+});
+function setStatus(online) {
+  const el = document.getElementById('statusText');
+  el.textContent = online ? '● Online' : '● Offline';
+  el.className = 'chat-status' + (online ? ' online' : '');
+}
+
+socket.on('receive_message', data => {
+  appendMessage(data.content, data.sender_id == CURRENT_USER_ID ? 'sent' : 'received',
+                data.timestamp, data.is_seen, data.id);
+  scrollBottom();
+  if (data.sender_id != CURRENT_USER_ID) {
+    socket.emit('mark_seen', { sender_id: OTHER_USER_ID });
+  }
+});
+
+socket.on('messages_seen', data => {
+  if (data.by_user_id == OTHER_USER_ID) {
+    document.querySelectorAll('.msg.sent .tick').forEach(t => {
+      t.textContent = '✓✓';
+      t.classList.add('seen');
+    });
+  }
+});
+
+let typingTimer;
+socket.on('user_typing', data => {
+  if (data.user_id == OTHER_USER_ID) {
+    typingTxt.textContent = data.username + ' is typing…';
+    typingInd.classList.add('show');
+    scrollBottom();
+  }
+});
+socket.on('user_stop_typing', data => {
+  if (data.user_id == OTHER_USER_ID) {
+    typingInd.classList.remove('show');
+  }
+});
+
+function appendMessage(content, type, time, seen, id) {
+  const div = document.createElement('div');
+  div.className = `msg ${type}`;
+  if (id) div.dataset.id = id;
+  div.textContent = content;
+  if (type === 'sent') {
+    const meta = document.createElement('div');
+    meta.className = 'msg-meta';
+    meta.innerHTML = `${time} <span class="tick ${seen?'seen':''}">${seen?'✓✓':'✓'}</span>`;
+    div.appendChild(meta);
+  }
+
+  const ti = document.getElementById('typingIndicator');
+  chatBody.insertBefore(div, ti);
+}
+
+function sendMessage() {
+  const content = msgInput.value.trim();
+  if (!content) return;
+  socket.emit('send_message', { receiver_id: OTHER_USER_ID, content: content });
+  msgInput.value = '';
+  msgInput.focus();
+  clearTimeout(typingTimer);
+  socket.emit('stop_typing', { receiver_id: OTHER_USER_ID });
+}
+
+sendBtn.addEventListener('click', sendMessage);
+msgInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+msgInput.addEventListener('input', () => {
+  socket.emit('typing', { receiver_id: OTHER_USER_ID });
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => {
+    socket.emit('stop_typing', { receiver_id: OTHER_USER_ID });
+  }, 1500);
+});
+
+msgInput.addEventListener('focus', () => {
+  setTimeout(scrollBottom, 400);
+});
+</script>
+{% endblock %}

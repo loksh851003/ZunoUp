@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+
+.chat-list-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.chat-item:last-child { border-bottom: none; }
+.chat-item:hover { background: var(--bg); }
+
+.chat-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--primary);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.chat-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+.chat-info { flex: 1; min-width: 0; }
+
+.chat-name {
+  font-weight: 700;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-preview {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-meta {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.chat-time { font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+
+.unread-badge {
+  background: var(--primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  display: inline-block;
+  min-width: 22px;
+  text-align: center;
+}
+
+.no-chats {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+.no-chats .emoji { font-size: 44px; margin-bottom: 12px; }
+</style>
+
+<div class="page-title">💬 Messages</div>
+
+<div class="chat-list-card">
+  {% if chat_data %}
+  {% for chat in chat_data %}
+  <a href="{{ url_for('chat', username=chat.user.username) }}">
+    <div class="chat-item">
+      <div class="chat-avatar">
+        {% if chat.user.image_file %}
+        <img src="{{ url_for('static', filename='uploads/' + chat.user.image_file) }}" alt="">
+        {% else %}
+        {{ chat.user.username[0].upper() }}
+        {% endif %}
+      </div>
+
+      <div class="chat-info">
+        <div class="chat-name">{{ chat.user.nickname or chat.user.username }}</div>
+        <div class="chat-preview">
+          {% if chat.last_message %}
+            {{ chat.last_message.content[:40] }}{% if chat.last_message.content|length > 40 %}...{% endif %}
+          {% else %}
+            No messages yet
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="chat-meta">
+        {% if chat.last_message %}
+        <div class="chat-time">{{ chat.last_message.timestamp.strftime('%H:%M') }}</div>
+        {% endif %}
+        {% if chat.unread_count > 0 %}
+        <div class="unread-badge">{{ chat.unread_count }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+  {% else %}
+  <div class="no-chats">
+    <div class="emoji">💭</div>
+    <p>No conversations yet.<br>Search for people to start chatting!</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

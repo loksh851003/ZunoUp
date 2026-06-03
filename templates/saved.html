@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-header { margin-bottom: 24px; }
+.page-header h2 { font-size: 22px; font-weight: 800; }
+.page-header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+.post-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+.post-header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; justify-content: space-between; }
+.post-author { display: flex; align-items: center; gap: 10px; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary-light); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--primary); font-size: 15px; flex-shrink: 0; }
+.avatar img { width:100%;height:100%;border-radius:50%;object-fit:cover; }
+.post-img { width:100%; max-height:480px; object-fit:cover; }
+.post-content { padding: 14px 16px; font-size:15px; line-height:1.55; }
+.post-meta { padding: 10px 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); display: flex; gap: 16px; align-items: center; }
+.unsave-btn { margin-left: auto; background: none; border: none; color: #f59e0b; font-size: 20px; cursor: pointer; min-height: 0; padding: 4px 8px; border-radius: 8px; transition: all 0.2s; }
+.unsave-btn:hover { background: #fef3c7; transform: none; box-shadow: none; }
+</style>
+
+<div class="page-header">
+  <h2>🔖 Saved Posts</h2>
+  <p>{{ posts|length }} saved post{{ 's' if posts|length != 1 }}</p>
+</div>
+
+{% if posts %}
+{% for post in posts %}
+<div class="post-card" id="saved-post-{{ post.id }}">
+  <div class="post-header">
+    <a href="{{ url_for('profile', username=post.author.username) }}" class="post-author" style="text-decoration:none;color:inherit">
+      <div class="avatar">
+        {% if post.author.image_file %}<img src="{{ url_for('static', filename='uploads/' + post.author.image_file) }}" alt="">
+        {% else %}{{ post.author.username[0].upper() }}{% endif %}
+      </div>
+      <div>
+        <div style="font-weight:700; font-size:15px">{{ post.author.nickname or post.author.username }}</div>
+        <div style="font-size:12px; color:var(--muted)">{{ post.date_posted.strftime('%b %d') }}</div>
+      </div>
+    </a>
+    <button class="unsave-btn" onclick="unsavePost({{ post.id }})">🔖</button>
+  </div>
+  {% if post.carousel_images %}
+  <div class="carousel-wrap">
+    <div class="carousel-track">{% for pi in post.carousel_images %}<img src="{{ url_for('static', filename='uploads/' + pi.filename) }}" alt="">{% endfor %}</div>
+    {% if post.carousel_images|length > 1 %}
+    <button class="carousel-btn prev">‹</button><button class="carousel-btn next">›</button>
+    <div class="carousel-dots">{% for pi in post.carousel_images %}<div class="carousel-dot{% if loop.first %} active{% endif %}"></div>{% endfor %}</div>
+    {% endif %}
+  </div>
+  {% elif post.image_file %}<img src="{{ url_for('static', filename='uploads/' + post.image_file) }}" class="post-img" alt="">{% endif %}
+  <div class="post-content">{{ post.content | render_content | safe }}</div>
+  <div class="post-meta"><span>❤️ {{ post.likers|length }}</span><span>💬 {{ post.comments|length }}</span></div>
+</div>
+{% endfor %}
+{% else %}
+<div style="text-align:center; padding:60px 20px; color:var(--muted)">
+  <div style="font-size:48px; margin-bottom:12px">🔖</div>
+  <div style="font-size:18px; font-weight:700; color:var(--text); margin-bottom:6px">No saved posts</div>
+  <div>Tap 🏷️ on any post to save it here.</div>
+</div>
+{% endif %}
+
+<script>
+function unsavePost(postId) {
+  fetch(`/post/${postId}/save`, { method: 'POST' })
+    .then(r => r.json()).then(data => {
+      if (!data.saved) {
+        const el = document.getElementById('saved-post-' + postId);
+        el.style.opacity = '0'; el.style.transform = 'scale(0.95)'; el.style.transition = 'all 0.3s';
+        setTimeout(() => el.remove(), 300);
+      }
+    });
+}
+document.addEventListener('DOMContentLoaded', initCarousels);
+</script>
+{% endblock %}

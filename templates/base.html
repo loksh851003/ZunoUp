@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ZunoUp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #6c47ff;
+    --primary-light: #ede9ff;
+    --accent: #ff6b6b;
+    --bg: #f0f2f8;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --muted: #8888a8;
+    --border: #e8e8f0;
+    --nav-h: 60px;
+    --bottom-nav-h: 64px;
+    --radius: 18px;
+    --shadow: 0 4px 24px rgba(108,71,255,0.08);
+    --green: #22c55e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: calc(var(--bottom-nav-h) + 16px);
+  }
+
+  a { text-decoration: none; color: inherit; }
+
+  .navbar {
+    background: var(--card);
+    height: var(--nav-h);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 16px rgba(108,71,255,0.07);
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+
+  .nav-inner {
+    width: 92%;
+    max-width: 1100px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--primary);
+    letter-spacing: -0.5px;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .nav-links a {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    padding: 8px 12px;
+    border-radius: 10px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .nav-links a:hover, .nav-links a.active {
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+
+  .nav-links a.logout-link { color: var(--accent); }
+  .nav-links a.logout-link:hover { background: #ffe9e9; color: var(--accent); }
+
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+  .hamburger:hover { background: var(--primary-light); }
+  .hamburger span {
+    width: 22px; height: 2px; background: var(--text);
+    border-radius: 4px; transition: all 0.3s; display: block;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  .mobile-menu {
+    display: none;
+    position: fixed;
+    top: var(--nav-h);
+    left: 0; right: 0;
+    background: var(--card);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    z-index: 199;
+    padding: 12px 16px 20px;
+    transform: translateY(-10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+  }
+  .mobile-menu.open { transform: translateY(0); opacity: 1; pointer-events: all; }
+  .mobile-menu a {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-radius: 12px;
+    font-size: 15px; font-weight: 500; color: var(--text);
+    transition: background 0.2s;
+  }
+  .mobile-menu a:hover { background: var(--primary-light); color: var(--primary); }
+  .mobile-menu a .menu-icon { font-size: 18px; width: 24px; text-align: center; }
+
+  .bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: var(--bottom-nav-h);
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    z-index: 200;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 4px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+  }
+  .bottom-nav a {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    padding: 8px 10px; border-radius: 12px;
+    color: var(--muted); font-size: 10px; font-weight: 600;
+    transition: all 0.2s; min-width: 44px;
+  }
+  .bottom-nav a .bn-icon { font-size: 20px; line-height: 1; }
+  .bottom-nav a.active { color: var(--primary); }
+  .bottom-nav a.active .bn-icon { transform: scale(1.15); }
+
+  .container {
+    width: 92%;
+    max-width: 680px;
+    margin: 24px auto;
+  }
+
+  button, .btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  button:hover, .btn:hover { background: #5538e0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(108,71,255,0.3); }
+  button:active, .btn:active { transform: translateY(0); }
+  .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+  .btn-outline:hover { background: var(--primary-light); box-shadow: none; }
+  .btn-danger { background: var(--accent); }
+  .btn-danger:hover { background: #e55a5a; box-shadow: 0 4px 12px rgba(255,107,107,0.3); }
+  .btn-sm { padding: 6px 14px; font-size: 13px; min-height: 36px; border-radius: 8px; }
+  .btn-green { background: var(--green); }
+  .btn-green:hover { background: #16a34a; box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
+
+  input[type="text"], input[type="email"], input[type="password"], textarea, select {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    width: 100%;
+    padding: 13px 16px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  input:focus, textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(108,71,255,0.12);
+    background: var(--card);
+  }
+  input[type="file"] {
+    font-size: 14px; padding: 10px;
+    border: 2px dashed var(--border); border-radius: 12px;
+    background: var(--bg); width: 100%; cursor: pointer;
+  }
+  textarea { resize: vertical; min-height: 100px; }
+  label { font-size: 14px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 6px; }
+  .form-group { margin-bottom: 16px; }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  /* Hashtag & mention links */
+  .hashtag-link { color: var(--primary); font-weight: 600; }
+  .hashtag-link:hover { text-decoration: underline; }
+  .mention-link { color: #0891b2; font-weight: 600; }
+  .mention-link:hover { text-decoration: underline; }
+
+  /* Carousel */
+  .carousel-wrap { position: relative; overflow: hidden; background: #000; }
+  .carousel-track { display: flex; transition: transform 0.35s ease; }
+  .carousel-track img { width: 100%; flex-shrink: 0; max-height: 480px; object-fit: contain; display: block; }
+  .carousel-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(0,0,0,0.45); color: #fff; border: none;
+    width: 36px; height: 36px; border-radius: 50%; font-size: 18px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    min-height: 0; z-index: 2; transition: background 0.2s;
+  }
+  .carousel-btn:hover { background: rgba(0,0,0,0.7); transform: translateY(-50%); box-shadow: none; }
+  .carousel-btn.prev { left: 10px; }
+  .carousel-btn.next { right: 10px; }
+  .carousel-dots { display: flex; justify-content: center; gap: 6px; padding: 8px 0 4px; }
+  .carousel-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
+  .carousel-dot.active { background: var(--primary); }
+
+  /* Poll */
+  .poll-option {
+    background: var(--bg); border-radius: 12px; margin-bottom: 10px;
+    overflow: hidden; cursor: pointer; transition: all 0.2s; border: 2px solid transparent;
+  }
+  .poll-option:hover { border-color: var(--primary); }
+  .poll-option.voted { border-color: var(--primary); }
+  .poll-inner { display: flex; align-items: center; padding: 12px 16px; gap: 10px; position: relative; }
+  .poll-bar {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: var(--primary-light); border-radius: 10px; transition: width 0.5s ease; z-index: 0;
+  }
+  .poll-label { flex: 1; font-size: 14px; font-weight: 600; position: relative; z-index: 1; }
+  .poll-pct { font-size: 13px; color: var(--muted); font-weight: 700; position: relative; z-index: 1; }
+
+  /* Repost badge */
+  .repost-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--muted); font-weight: 600;
+    padding: 8px 16px 0;
+  }
+
+  #toast-container {
+    position: fixed; top: 80px; right: 16px;
+    z-index: 9999; display: flex; flex-direction: column;
+    gap: 10px; max-width: 320px;
+  }
+  .toast {
+    background: var(--text); color: white;
+    padding: 14px 18px; border-radius: 12px;
+    font-size: 14px; font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    animation: slideIn 0.3s ease, fadeOut 0.4s ease 3.5s forwards;
+    display: flex; align-items: center; gap: 10px;
+  }
+  @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes fadeOut { to { opacity: 0; transform: translateX(100px); } }
+
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .hamburger { display: flex; }
+    .mobile-menu { display: block; }
+    .bottom-nav { display: flex; }
+    body { padding-bottom: calc(var(--bottom-nav-h) + 8px); }
+    .container { margin: 16px auto; }
+  }
+  @media (min-width: 769px) { body { padding-bottom: 0; } }
+
+  .text-muted { color: var(--muted); }
+  .text-center { text-align: center; }
+  .mt-1 { margin-top: 8px; }
+  .mt-2 { margin-top: 16px; }
+  .flex { display: flex; align-items: center; }
+  .gap-2 { gap: 8px; }
+  .w-full { width: 100%; }
+  .badge { background: var(--accent); color: white; border-radius: 99px; font-size: 11px; font-weight: 700; padding: 2px 7px; min-width: 20px; text-align: center; }
+</style>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="nav-inner">
+    <div class="logo">ZunoUp</div>
+    <div class="nav-links">
+      <a href="{{ url_for('home') }}">🏠 Home</a>
+      <a href="{{ url_for('explore') }}">🔭 Explore</a>
+      <a href="{{ url_for('create_post') }}">✏️ Create</a>
+      <a href="{{ url_for('societies_list') }}">🏛️ Societies</a>
+      <a href="{{ url_for('chat_list') }}">💬 Chats</a>
+      <a href="{{ url_for('search') }}">🔍 Search</a>
+      <a href="{{ url_for('notifications') }}">🔔 Alerts</a>
+      <a href="{{ url_for('saved_posts_page') }}">🔖 Saved</a>
+      <a href="{{ url_for('profile', username=current_user.username) }}">👤 Profile</a>
+      <a href="{{ url_for('logout') }}" class="logout-link">🚪 Logout</a>
+    </div>
+    <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</div>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="{{ url_for('home') }}"><span class="menu-icon">🏠</span> Home</a>
+  <a href="{{ url_for('explore') }}"><span class="menu-icon">🔭</span> Explore</a>
+  <a href="{{ url_for('create_post') }}"><span class="menu-icon">✏️</span> Create Post</a>
+  <a href="{{ url_for('societies_list') }}"><span class="menu-icon">🏛️</span> Societies</a>
+  <a href="{{ url_for('chat_list') }}"><span class="menu-icon">💬</span> Chats</a>
+  <a href="{{ url_for('search') }}"><span class="menu-icon">🔍</span> Search</a>
+  <a href="{{ url_for('notifications') }}"><span class="menu-icon">🔔</span> Notifications</a>
+  <a href="{{ url_for('saved_posts_page') }}"><span class="menu-icon">🔖</span> Saved Posts</a>
+  <a href="{{ url_for('profile', username=current_user.username) }}"><span class="menu-icon">👤</span> Profile</a>
+  <a href="{{ url_for('logout') }}" style="color:#ff6b6b"><span class="menu-icon">🚪</span> Logout</a>
+</div>
+
+<nav class="bottom-nav">
+  <a href="{{ url_for('home') }}"><span class="bn-icon">🏠</span>Home</a>
+  <a href="{{ url_for('explore') }}"><span class="bn-icon">🔭</span>Explore</a>
+  <a href="{{ url_for('create_post') }}"><span class="bn-icon">✏️</span>Post</a>
+  <a href="{{ url_for('search') }}"><span class="bn-icon">🔍</span>Search</a>
+  <a href="{{ url_for('profile', username=current_user.username) }}"><span class="bn-icon">👤</span>Profile</a>
+</nav>
+
+<div id="toast-container"></div>
+
+<div class="container">
+  {% block content %}{% endblock %}
+</div>
+
+<script>
+function toggleMenu() {
+  const h = document.getElementById('hamburger');
+  const m = document.getElementById('mobileMenu');
+  h.classList.toggle('open');
+  m.classList.toggle('open');
+}
+document.querySelectorAll('.mobile-menu a').forEach(a => {
+  a.addEventListener('click', () => {
+    document.getElementById('hamburger').classList.remove('open');
+    document.getElementById('mobileMenu').classList.remove('open');
+  });
+});
+document.addEventListener('click', (e) => {
+  const h = document.getElementById('hamburger');
+  const m = document.getElementById('mobileMenu');
+  if (!h.contains(e.target) && !m.contains(e.target)) {
+    h.classList.remove('open');
+    m.classList.remove('open');
+  }
+});
+
+const path = window.location.pathname;
+document.querySelectorAll('.nav-links a, .bottom-nav a').forEach(a => {
+  if (a.getAttribute('href') === path) a.classList.add('active');
+});
+
+var socket = io();
+socket.on("new_notification", function(data) { showToast('🔔 ' + data.message); });
+
+function showToast(msg) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// Global carousel init
+function initCarousels() {
+  document.querySelectorAll('.carousel-wrap').forEach(wrap => {
+    if (wrap.dataset.initialized) return;
+    wrap.dataset.initialized = '1';
+    const track = wrap.querySelector('.carousel-track');
+    const imgs = track ? track.querySelectorAll('img') : [];
+    if (imgs.length <= 1) return;
+    let cur = 0;
+    const dots = wrap.querySelectorAll('.carousel-dot');
+    function goTo(n) {
+      cur = (n + imgs.length) % imgs.length;
+      track.style.transform = `translateX(-${cur * 100}%)`;
+      dots.forEach((d, i) => d.classList.toggle('active', i === cur));
+    }
+    wrap.querySelector('.prev')?.addEventListener('click', () => goTo(cur - 1));
+    wrap.querySelector('.next')?.addEventListener('click', () => goTo(cur + 1));
+    goTo(0);
+  });
+}
+document.addEventListener('DOMContentLoaded', initCarousels);
+</script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.container { padding: 0; max-width: 480px; }
+
+.story-viewer {
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+  aspect-ratio: 9/16;
+  max-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-bars {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.progress-seg {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,0.35);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: white;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.story-header-overlay {
+  position: absolute;
+  top: 28px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 10;
+}
+
+.story-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+}
+
+.story-username { color: white; font-weight: 700; font-size: 14px; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+
+.story-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.story-delete-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 16px;
+  background: rgba(255,107,107,0.9);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  z-index: 10;
+}
+
+.no-stories {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+</style>
+
+{% if stories %}
+<div class="story-viewer">
+
+  <div class="progress-bars">
+    {% for story in stories %}
+    <div class="progress-seg" id="seg-{{ loop.index0 }}">
+      <div class="progress-fill" id="fill-{{ loop.index0 }}"></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="story-header-overlay">
+    <div class="story-user-avatar">{{ user.username[0].upper() }}</div>
+    <span class="story-username">{{ user.username }}</span>
+  </div>
+
+  <img class="story-img" id="storyImg" src="" alt="">
+
+  {% if stories[0].user == current_user %}
+  <form id="deleteForm" method="POST">
+    <button type="submit" class="story-delete-btn">🗑 Delete</button>
+  </form>
+  {% endif %}
+</div>
+
+<script>
+const stories = [
+  {% for story in stories %}
+  {
+    url: "{{ url_for('static', filename='uploads/' + story.image_file) }}",
+    deleteUrl: "{{ url_for('delete_story', story_id=story.id) }}"
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+let index = 0;
+let interval = null;
+
+const img = document.getElementById('storyImg');
+const deleteForm = document.getElementById('deleteForm');
+
+function showStory() {
+  if (index >= stories.length) {
+    window.location.href = '/';
+    return;
+  }
+
+  stories.forEach((_, i) => {
+    const fill = document.getElementById('fill-' + i);
+    if (fill) fill.style.width = i < index ? '100%' : '0%';
+  });
+
+  img.src = stories[index].url;
+  if (deleteForm) deleteForm.action = stories[index].deleteUrl;
+
+  let width = 0;
+  clearInterval(interval);
+  interval = setInterval(() => {
+    width += 2;
+    const fill = document.getElementById('fill-' + index);
+    if (fill) fill.style.width = width + '%';
+    if (width >= 100) {
+      clearInterval(interval);
+      index++;
+      showStory();
+    }
+  }, 100);
+}
+
+document.querySelector('.story-viewer').addEventListener('click', (e) => {
+  const w = e.currentTarget.offsetWidth;
+  if (e.clientX < w / 2) {
+    clearInterval(interval);
+    index = Math.max(0, index - 1);
+  } else {
+    clearInterval(interval);
+    index++;
+  }
+  showStory();
+});
+
+showStory();
+</script>
+
+{% else %}
+<div class="no-stories">
+  <div style="font-size:44px;margin-bottom:10px">📭</div>
+  <p>No active stories</p>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.society-hero { background: linear-gradient(135deg, var(--primary), #a78bfa); border-radius: var(--radius); padding: 32px 24px; color: white; margin-bottom: 24px; position: relative; overflow: hidden; }
+.society-hero h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+.society-hero p { opacity: 0.9; font-size: 15px; margin-bottom: 16px; line-height: 1.55; }
+.society-stats { display: flex; gap: 24px; margin-bottom: 16px; }
+.society-stat { text-align: center; }
+.society-stat .val { font-size: 22px; font-weight: 800; }
+.society-stat .lbl { font-size: 12px; opacity: 0.8; }
+.member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 12px; }
+.member-item { text-align: center; }
+.member-item .avatar { width: 52px; height: 52px; margin: 0 auto 6px; border-radius: 50%; background: var(--primary-light); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--primary); font-size: 18px; overflow: hidden; }
+.member-item .avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+.member-item .m-name { font-size: 11px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+
+<div class="society-hero">
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+    <div>
+      <h1>{{ society.name }}</h1>
+      {% if society.description %}<p>{{ society.description }}</p>{% endif %}
+      <div class="society-stats">
+        <div class="society-stat"><div class="val">{{ society.members.count() }}</div><div class="lbl">Members</div></div>
+        <div class="society-stat"><div class="val">{{ society.category | title }}</div><div class="lbl">Category</div></div>
+      </div>
+    </div>
+  </div>
+  {% if is_member %}
+  <form method="POST" action="{{ url_for('leave_society', slug=society.slug) }}" style="display:inline">
+    <button type="submit" style="background:rgba(255,255,255,0.2); color:white; border:2px solid white; min-height:40px; padding:8px 20px; border-radius:10px; font-weight:700; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✓ Joined</button>
+  </form>
+  {% else %}
+  <form method="POST" action="{{ url_for('join_society', slug=society.slug) }}" style="display:inline">
+    <button type="submit" style="background:white; color:var(--primary); border:none; min-height:40px; padding:8px 20px; border-radius:10px; font-weight:700; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">+ Join</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="card" style="padding:20px">
+  <div style="font-size:17px; font-weight:800; margin-bottom:16px;">👥 Members ({{ society.members.count() }})</div>
+  {% if society.members.all() %}
+  <div class="member-grid">
+    {% for member in society.members.all()[:30] %}
+    <a href="{{ url_for('profile', username=member.username) }}" class="member-item" style="text-decoration:none; color:inherit">
+      <div class="avatar">
+        {% if member.image_file %}<img src="{{ url_for('static', filename='uploads/' + member.image_file) }}" alt="">
+        {% else %}{{ member.username[0].upper() }}{% endif %}
+      </div>
+      <div class="m-name">{{ member.username }}</div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p style="color:var(--muted); font-size:14px">No members yet. Be the first to join!</p>
+  {% endif %}
+</div>
+{% endblock %}

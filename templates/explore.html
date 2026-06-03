@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.explore-header { margin-bottom: 24px; }
+.explore-header h1 { font-size: 26px; font-weight: 800; }
+.explore-header p { color: var(--muted); font-size: 15px; margin-top: 4px; }
+
+.section-title { font-size: 17px; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+/* Trending tags */
+.tags-cloud { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
+.tag-chip {
+  background: var(--card); border: 2px solid var(--border);
+  border-radius: 24px; padding: 8px 16px;
+  font-size: 14px; font-weight: 700; color: var(--primary);
+  text-decoration: none; transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.tag-chip:hover { background: var(--primary-light); border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(108,71,255,0.15); }
+.tag-count { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+/* User cards */
+.users-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 16px; scrollbar-width: none; }
+.users-scroll::-webkit-scrollbar { display: none; }
+.user-card {
+  flex-shrink: 0; width: 140px; background: var(--card);
+  border-radius: 16px; padding: 16px 12px; text-align: center;
+  box-shadow: var(--shadow); transition: transform 0.2s;
+}
+.user-card:hover { transform: translateY(-3px); }
+.user-card .avatar { width: 52px; height: 52px; margin: 0 auto 10px; font-size: 20px; border-radius: 50%; }
+.user-card .u-name { font-weight: 700; font-size: 13px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-card .u-muted { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+.user-card .follow-btn { width: 100%; font-size: 12px; min-height: 34px; border-radius: 8px; }
+
+/* Society cards */
+.societies-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 16px; scrollbar-width: none; }
+.societies-scroll::-webkit-scrollbar { display: none; }
+.society-card {
+  flex-shrink: 0; width: 160px; background: var(--card);
+  border-radius: 16px; overflow: hidden;
+  box-shadow: var(--shadow); transition: transform 0.2s;
+}
+.society-card:hover { transform: translateY(-3px); }
+.society-banner { height: 70px; background: linear-gradient(135deg, var(--primary), #a78bfa); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.society-info { padding: 12px; }
+.society-info .s-name { font-weight: 700; font-size: 13px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.society-info .s-cat { font-size: 11px; color: var(--muted); text-transform: capitalize; }
+
+/* Post mini cards */
+.posts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+@media (min-width: 500px) { .posts-grid { grid-template-columns: repeat(3, 1fr); } }
+.post-mini { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; cursor: pointer; transition: transform 0.2s; }
+.post-mini:hover { transform: translateY(-3px); }
+.post-mini-img { width: 100%; height: 100px; object-fit: cover; background: var(--primary-light); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 11px; padding: 6px; text-align: center; }
+.post-mini-img img { width: 100%; height: 100%; object-fit: cover; }
+.post-mini-footer { padding: 8px 10px; }
+.post-mini-author { font-size: 11px; font-weight: 700; color: var(--muted); }
+.post-mini-likes { font-size: 11px; color: var(--accent); }
+</style>
+
+<div class="explore-header">
+  <h1>🔭 Explore</h1>
+  <p>Discover what's trending at DTU</p>
+</div>
+
+<!-- Trending Hashtags -->
+<div class="section-title">🔥 Trending Hashtags</div>
+<div class="tags-cloud">
+  {% if trending_tags %}
+    {% for tag, count in trending_tags %}
+    <a href="{{ url_for('hashtag_page', tag_name=tag.name) }}" class="tag-chip">
+      #{{ tag.name }} <span class="tag-count">{{ count }}</span>
+    </a>
+    {% endfor %}
+  {% else %}
+    <p style="color:var(--muted); font-size:14px">No trending hashtags yet. Start posting with #tags!</p>
+  {% endif %}
+</div>
+
+<!-- Recommended Users -->
+{% if rec_users %}
+<div class="section-title">👥 People to Follow</div>
+<div class="users-scroll">
+  {% for user in rec_users %}
+  <div class="user-card">
+    <div class="avatar" style="background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center;">
+      {% if user.image_file %}
+      <img src="{{ url_for('static', filename='uploads/' + user.image_file) }}" style="width:52px;height:52px;border-radius:50%;object-fit:cover" alt="">
+      {% else %}
+      {{ user.username[0].upper() }}
+      {% endif %}
+    </div>
+    <div class="u-name">{{ user.nickname or user.username }}</div>
+    <div class="u-muted">@{{ user.username }}</div>
+    <form method="POST" action="{{ url_for('follow', username=user.username) }}" style="display:inline">
+      <button type="submit" class="btn follow-btn">Follow</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recommended Societies -->
+{% if rec_societies %}
+<div class="section-title">🏛️ Societies & Clubs</div>
+<div class="societies-scroll">
+  {% for society in rec_societies %}
+  <a href="{{ url_for('society_page', slug=society.slug) }}" class="society-card">
+    <div class="society-banner">
+      {% if society.image_file %}
+      <img src="{{ url_for('static', filename='uploads/' + society.image_file) }}" style="width:100%;height:100%;object-fit:cover" alt="">
+      {% else %}
+      🏛️
+      {% endif %}
+    </div>
+    <div class="society-info">
+      <div class="s-name">{{ society.name }}</div>
+      <div class="s-cat">{{ society.category }}</div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Trending Posts This Week -->
+<div class="section-title">📈 Trending Posts</div>
+{% if trending_posts %}
+<div class="posts-grid">
+  {% for post in trending_posts %}
+  <div class="post-mini" onclick="window.location='{{ url_for('profile', username=post.author.username) }}'">
+    <div class="post-mini-img">
+      {% if post.carousel_images %}
+      <img src="{{ url_for('static', filename='uploads/' + post.carousel_images[0].filename) }}" alt="">
+      {% elif post.image_file %}
+      <img src="{{ url_for('static', filename='uploads/' + post.image_file) }}" alt="">
+      {% else %}
+      {{ post.content[:60] }}...
+      {% endif %}
+    </div>
+    <div class="post-mini-footer">
+      <div class="post-mini-author">@{{ post.author.username }}</div>
+      <div class="post-mini-likes">❤️ {{ post.likers|length }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p style="color:var(--muted); font-size:14px; margin-bottom:24px">No trending posts yet this week.</p>
+{% endif %}
+
+<!-- Most Liked Posts -->
+<div class="section-title">🏆 Most Liked This Week</div>
+{% if top_posts %}
+<div class="posts-grid">
+  {% for post in top_posts %}
+  <div class="post-mini" onclick="window.location='{{ url_for('profile', username=post.author.username) }}'">
+    <div class="post-mini-img">
+      {% if post.carousel_images %}
+      <img src="{{ url_for('static', filename='uploads/' + post.carousel_images[0].filename) }}" alt="">
+      {% elif post.image_file %}
+      <img src="{{ url_for('static', filename='uploads/' + post.image_file) }}" alt="">
+      {% else %}
+      {{ post.content[:60] }}
+      {% endif %}
+    </div>
+    <div class="post-mini-footer">
+      <div class="post-mini-author">@{{ post.author.username }}</div>
+      <div class="post-mini-likes">❤️ {{ post.likers|length }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p style="color:var(--muted); font-size:14px">No posts yet.</p>
+{% endif %}
+{% endblock %}

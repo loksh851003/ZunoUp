@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.profile-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px 24px;
+  margin-bottom: 24px;
+}
+
+.profile-top {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--primary-light);
+  box-shadow: 0 0 0 2px var(--primary);
+  flex-shrink: 0;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--primary);
+  overflow: hidden;
+}
+
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+.profile-info { flex: 1; min-width: 0; }
+
+.profile-name {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.profile-username {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 14px;
+}
+
+.stat { text-align: center; cursor: pointer; }
+.stat-num { font-size: 18px; font-weight: 700; display: block; }
+.stat-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+.profile-bio {
+  font-size: 14px;
+  color: #444;
+  line-height: 1.55;
+  margin-bottom: 16px;
+}
+
+.private-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.posts-section h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.posts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.profile-post-card {
+  background: var(--card);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s;
+  aspect-ratio: 1;
+  position: relative;
+}
+
+.profile-post-card:hover { transform: scale(1.02); }
+
+.profile-post-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-post-text {
+  padding: 12px;
+  font-size: 13px;
+  color: var(--text);
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  overflow: hidden;
+}
+
+.post-stats-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.5));
+  color: white;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 540px) {
+  .profile-top { flex-direction: column; align-items: center; text-align: center; }
+  .profile-stats { justify-content: center; }
+  .action-row { justify-content: center; }
+  .posts-grid { grid-template-columns: repeat(3, 1fr); gap: 3px; }
+  .profile-post-card { border-radius: 4px; }
+  .profile-avatar { width: 86px; height: 86px; font-size: 30px; }
+}
+</style>
+
+<div class="profile-card">
+  <div class="profile-top">
+    <div class="profile-avatar">
+      {% if user.image_file %}
+      <img src="{{ url_for('static', filename='uploads/' + user.image_file) }}" alt="">
+      {% else %}
+      {{ user.username[0].upper() }}
+      {% endif %}
+    </div>
+
+    <div class="profile-info">
+      <div class="profile-name">{{ user.nickname or user.username }}</div>
+      <div class="profile-username">@{{ user.username }}</div>
+
+      {% if user.is_private %}
+      <div class="private-badge">🔒 Private</div>
+      {% endif %}
+
+      <div class="profile-stats">
+        <div class="stat">
+          <span class="stat-num">{{ user.posts|length }}</span>
+          <span class="stat-label">Posts</span>
+        </div>
+        <a href="{{ url_for('followers_list', username=user.username) }}" class="stat">
+          <span class="stat-num">{{ user.followers.count() }}</span>
+          <span class="stat-label">Followers</span>
+        </a>
+        <a href="{{ url_for('following_list', username=user.username) }}" class="stat">
+          <span class="stat-num">{{ user.followed.count() }}</span>
+          <span class="stat-label">Following</span>
+        </a>
+      </div>
+
+      {% if user.bio %}
+      <p class="profile-bio">{{ user.bio }}</p>
+      {% endif %}
+
+      <div class="action-row">
+        {% if user == current_user %}
+        <a href="{{ url_for('edit_profile') }}"><button class="btn-outline">✏️ Edit Profile</button></a>
+        {% else %}
+        <a href="{{ url_for('chat', username=user.username) }}"><button class="btn-outline">💬 Message</button></a>
+        {% if current_user.is_following(user) %}
+        <form method="POST" action="{{ url_for('unfollow', username=user.username) }}" style="display:inline">
+          <button class="btn-outline">✓ Following</button>
+        </form>
+        {% elif has_pending_request %}
+        <form method="POST" action="{{ url_for('unfollow', username=user.username) }}" style="display:inline">
+          <button class="btn-outline">⏳ Requested</button>
+        </form>
+        {% else %}
+        <form method="POST" action="{{ url_for('follow', username=user.username) }}" style="display:inline">
+          <button>➕ Follow</button>
+        </form>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="posts-section">
+  <h3>Posts</h3>
+  {% if posts %}
+  <div class="posts-grid">
+    {% for post in posts %}
+    <div class="profile-post-card">
+      {% if post.carousel_images %}
+      <img src="{{ url_for('static', filename='uploads/' + post.carousel_images[0].filename) }}" alt="">
+      <div class="post-stats-overlay">❤️ {{ post.likers|length }} &nbsp;💬 {{ post.comments|length }}</div>
+      {% elif post.image_file %}
+      <img src="{{ url_for('static', filename='uploads/' + post.image_file) }}" alt="">
+      <div class="post-stats-overlay">❤️ {{ post.likers|length }} &nbsp;💬 {{ post.comments|length }}</div>
+      {% else %}
+      <div class="profile-post-text">{{ post.content[:80] }}{% if post.content|length > 80 %}...{% endif %}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p style="color:var(--muted); text-align:center; padding: 40px 0;">No posts yet</p>
+  {% endif %}
+</div>
+
+{% endblock %}
