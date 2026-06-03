@@ -467,7 +467,6 @@ def edit_profile():
             current_user.username = new_username
         if new_email and new_email != current_user.email:
             # [TESTING MODE] Email restriction removed
-            if False:
             if User.query.filter_by(email=new_email).first():
                 return render_template("edit_profile.html", user=current_user, error="Email in use.")
             current_user.email = new_email

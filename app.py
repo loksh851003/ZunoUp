@@ -30,7 +30,7 @@ db.init_app(app)
 login_manager.init_app(app)
 
 migrate  = Migrate(app, db)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
 
 # Import routes AFTER extensions are initialised
 from routes import *  # noqa: E402, F401, F403
